@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+<%_
+function snake_case(x) {
+    return x.toLowerCase().replace(' ', '_')
+}
+
+function between(x, min, max) {
+    return x >= min && x <= max;
+}
+_%>
+import chai from 'chai'
+
+import { getReasonPhrase } from 'http-status-codes';
+
+import { HTTPError<% errors.forEach(function (error) { -%>, <%- error.klass %><% }); %> } from '../src/'
+
+const expect = chai.expect
+
+describe('template-errors', function () {
+    describe('HTTPError', function () {
+        it('should have a matching name', function () {
+            const error = new HTTPError('Testing', 404)
+            expect(error.name).to.be.equal('Not Found')
+            expect(error.status).to.be.equal(404)
+        })
+
+        it('should have a name unknown if invalid status', function () {
+            const error = new HTTPError('Testing', 878)
+            expect(error.name).to.be.equal('Unknown')
+            expect(error.status).to.be.equal(878)
+        })
+
+        it('should set the name is passed', function () {
+            const error = new HTTPError('Testing', 878, 'HndlrError')
+            expect(error.name).to.be.equal('HndlrError')
+            expect(error.status).to.be.equal(878)
+        })
+    })
+
+<% errors.forEach(function (error) { -%>
+    describe("<%- snake_case(_statuses.getReasonPhrase(error.status)) %>", function () {
+<% if (error.status === 422 || error.status === 409 || error.status === 500) { -%>
+        it('should have a matching status', function () {
+            const error = new <%- error.klass %>('Some sort of message')
+            expect(error.name).to.be.equal("<%- _statuses.getReasonPhrase(error.status) %>")
+            expect(error.status).to.be.equal(<%- error.status %>)
+            expect(error.message).to.be.equal('Some sort of message')
+        })
+
+        it('should have an underlyingError if passes', function () {
+            const error = new <%- error.klass %>('Some sort of message', new Error('Some sort of an another message'))
+            expect(error.name).to.be.equal("<%- _statuses.getReasonPhrase(error.status) %>")
+            expect(error.underlyingError.message).to.be.equal('Some sort of an another message')
+            expect(error.status).to.be.equal(<%- error.status %>)
+        })
+<% } else if (between(error.status, 300, 303) || between(error.status, 307, 308) || error.status === 305) { -%>
+        it('should have a matching status', function () {
+            const error = new <%- error.klass %>('http://example.com')
+            expect(error.name).to.be.equal("<%- _statuses.getReasonPhrase(error.status) %>")
+            expect(error.status).to.be.equal(<%- error.status %>)
+        })
+
+        it('should throw on invalid URL', function () {
+            var fn = function () { new <%- error.klass %>('invalid_url') }
+            expect(fn).to.throw(TypeError, 'Invalid url [invalid_url]');
+        })
+<% } else if (between(error.status, 204, 205) || error.status === 304 || error.status === 418) { -%>
+        it('should have the message as the phrase', function () {
+            const error = new <%- error.klass %>()
+            expect(error.message).to.be.equal(getReasonPhrase(<%- error.status %>))
+            expect(error.status).to.be.equal(<%- error.status %>)
+        })
+<% } else { -%>
+        it('should have a matching status', function () {
+            const error = new <%- error.klass %>('Some sort of message')
+            expect(error.name).to.be.equal("<%- _statuses.getReasonPhrase(error.status) %>")
+            expect(error.status).to.be.equal(<%- error.status %>)
+            expect(error.message).to.be.equal('Some sort of message')
+        })
+<% } -%>
+    })
+
+<% }); %>
+})
+
+

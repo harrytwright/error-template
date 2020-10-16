@@ -1,11 +1,11 @@
 # Error
 
-Template generator for [Erred](http://github.com/harrytwright/erred)
+Template generator for [errors](http://github.com/hndlr/errors)
 
 ## Installation
 
 ```bash
-$ npm install -dev @harrytwright/error-template
+$ npm install -dev @hndlr/error-template
 ```
 
 ## Quick Start

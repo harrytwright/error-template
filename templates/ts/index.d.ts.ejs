@@ -14,7 +14,7 @@ declare namespace errors {
         status: number
         name: string
 
-        constructor(message: string, status: number)
+        constructor(message: string, status: number, name?: string)
     }
 
 <% errors.forEach(function (error) { -%>

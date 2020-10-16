@@ -54,3 +54,6 @@ jspm_packages/
 #*/.env
 dist
 var
+
+src
+types

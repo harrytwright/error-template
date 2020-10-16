@@ -10,41 +10,53 @@ function between(x, min, max) {
     return x >= min && x <= max;
 }
 _%>
-
 export class HTTPError extends Error {
+  constructor (message, status, name) {
+    super(message)
+    this.status = status
 
-    constructor(message, status) {
-        super(message);
-
-        this.status = status;
-
-        this.name = Status.getReasonPhrase(status);
+    // Since we may get custom HTTPErrors we shouldn't
+    // stop them from being allowed, defeats the objective
+    // of this being exported
+    try {
+      this.name = name || Status.getReasonPhrase(status)
+    } catch (e) {
+      this.name = 'Unknown'
     }
-
+  }
 }
-
 <% errors.forEach(function (error) { -%>
+
 export class <%- error.klass %> extends HTTPError {
-
-    <% if (error.status === 422 || error.status === 409 || error.status === 500) { -%>
-    constructor(message, underlyingError = null) {
-        super(message, <%- error.status %>);
-        this.underlyingError = underlyingError;
-    }
-    <% } else if (between(error.status, 300, 303) || between(error.status, 307, 308) || error.status === 305) { -%>
-    constructor(url) {
-        super(Status.getReasonPhrase(<%- error.status %>), <%- error.status %>);
-        this.redirectURL = url;
-    }
-    <% } else if (between(error.status, 204, 205) || error.status === 304 || error.status === 418) { -%>
-    constructor() {
-        super(Status.getReasonPhrase(<%- error.status %>), <%- error.status %>);
-    }
-    <% } else { -%>
-    constructor(message) {
-        super(message, <%- error.status %>);
-    }
-    <% } -%>
-
+<% if (error.status === 422 || error.status === 409 || error.status === 500) { -%>
+  constructor (message, underlyingError = null) {
+    super(message, <%- error.status %>)
+    this.underlyingError = underlyingError
+  }
+<% } else if (between(error.status, 300, 303) || between(error.status, 307, 308) || error.status === 305) { -%>
+  constructor (url) {
+    super(Status.getReasonPhrase(<%- error.status %>), <%- error.status %>)
+    if (!isValidUrl(url)) throw TypeError(`Invalid url [${url}]`)
+    this.redirectURL = url
+  }
+<% } else if (between(error.status, 204, 205) || error.status === 304 || error.status === 418) { -%>
+  constructor () {
+    super(Status.getReasonPhrase(<%- error.status %>), <%- error.status %>)
+  }
+<% } else { -%>
+  constructor (message) {
+    super(message, <%- error.status %>)
+  }
+<% } -%>
 }
-<% }); %>
+<% }) %>
+function isValidUrl (string) {
+  try {
+    // eslint-disable-next-line no-new
+    new URL(string)
+  } catch (_) {
+    return false
+  }
+
+  return true
+}
